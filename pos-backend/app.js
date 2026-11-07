@@ -20,7 +20,7 @@ if (!config.accessTokenSecret || config.accessTokenSecret.length < 32) {
 }
 
 const PORT = config.port;
-connectDB();
+connectDB().catch((err) => console.error("Initial database connection error:", err.message));
 
 // Behind a hosting proxy (Render, Railway, nginx), set TRUST_PROXY=1 so rate limits see real addresses
 if (config.trustProxy) app.set("trust proxy", config.trustProxy);
