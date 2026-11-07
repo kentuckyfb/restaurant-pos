@@ -14,13 +14,22 @@ const userSlice = createSlice({
     initialState,
     reducers: {
         setUser: (state, action) => {
-            const { _id, name, phone, email, role  } = action.payload;
-            state._id = _id;
-            state.name = name;
-            state.phone = phone;
-            state.email = email;
-            state.role = role;
-            state.isAuth = true;
+            if (!action.payload) {
+                state._id = "";
+                state.name = "";
+                state.phone = "";
+                state.email = "";
+                state.role = "";
+                state.isAuth = false;
+                return;
+            }
+            const { _id, name, phone, email, role } = action.payload;
+            state._id = _id || "";
+            state.name = name || "";
+            state.phone = phone || "";
+            state.email = email || "";
+            state.role = role || "";
+            state.isAuth = Boolean(_id);
         },
 
         removeUser: (state) => {

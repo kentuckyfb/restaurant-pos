@@ -14,21 +14,47 @@ const useLoadData = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const load = async () => {
-      const [user, settings] = await Promise.allSettled([
-        cached("user", getUserData)(),
-        queryClient.fetchQuery({ queryKey: ["settings"], queryFn: cached("settings", getSettings) }),
-      ]);
-      if (user.status === "fulfilled") {
-        dispatch(setUser(user.value.data));
-        if (settings.status === "fulfilled") setCurrencySymbol(settings.value.data.currencySymbol);
-      } else {
+      try {
+        const [user, settings] = await Promise.allSettled([
+          cached("user", getUserData)(),
+          queryClient.fetchQuery({ queryKey: ["settings"], queryFn: cached("settings", getSettings) }),
+        ]);
+
+        if (user.status === "fulfilled" && user.value) {
+          const userData = user.value?.data || user.value;
+          if (userData && userData._id) {
+            dispatch(setUser(userData));
+          } else {
+            dispatch(removeUser());
+          }
+        } else {
+          dispatch(removeUser());
+        }
+
+        if (settings.status === "fulfilled" && settings.value) {
+          const settingsData = settings.value?.data || settings.value;
+          if (settingsData?.currencySymbol) {
+            setCurrencySymbol(settingsData.currencySymbol);
+          }
+        }
+      } catch (error) {
+        console.error("Session restore error:", error);
         dispatch(removeUser());
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
     };
 
     load();
+
+    return () => {
+      mounted = false;
+    };
   }, [dispatch, queryClient]);
 
   return isLoading;
