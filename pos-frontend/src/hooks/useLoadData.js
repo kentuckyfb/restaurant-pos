@@ -1,32 +1,35 @@
 import { useDispatch } from "react-redux";
-import { getUserData } from "../https";
+import { useQueryClient } from "@tanstack/react-query";
+import { getSettings, getUserData } from "../https";
 import { useEffect, useState } from "react";
 import { removeUser, setUser } from "../redux/slices/userSlice";
-import { useNavigate } from "react-router-dom";
+import { setCurrencySymbol } from "../utils";
+import { cached } from "../offline/cache";
 
+// Restores the session (if any) and loads business settings before the app renders.
+// Both load at the same time; offline, the copies saved on this device are used.
 const useLoadData = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await getUserData();
-        console.log(data);
-        const { _id, name, email, phone, role } = data.data;
-        dispatch(setUser({ _id, name, email, phone, role }));
-      } catch (error) {
+    const load = async () => {
+      const [user, settings] = await Promise.allSettled([
+        cached("user", getUserData)(),
+        queryClient.fetchQuery({ queryKey: ["settings"], queryFn: cached("settings", getSettings) }),
+      ]);
+      if (user.status === "fulfilled") {
+        dispatch(setUser(user.value.data));
+        if (settings.status === "fulfilled") setCurrencySymbol(settings.value.data.currencySymbol);
+      } else {
         dispatch(removeUser());
-        Navigate("/auth");
-        console.log(error);
-      }finally{
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
 
-    fetchUser();
-  }, [dispatch, navigate]);
+    load();
+  }, [dispatch, queryClient]);
 
   return isLoading;
 };

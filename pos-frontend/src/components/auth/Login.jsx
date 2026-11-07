@@ -1,88 +1,97 @@
 import React, { useState } from "react";
-import { useMutation } from "@tanstack/react-query"
-import { login } from "../../https/index"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { getSettings, login, register } from "../../https/index"
 import { enqueueSnackbar } from "notistack";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
- 
-const Login = () => {
+import { apiError, setCurrencySymbol } from "../../utils";
+
+// Signs in, or on a brand-new install (isSetup) creates the first admin account
+const Login = ({ isSetup }) => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const queryClient = useQueryClient();
     const[formData, setFormData] = useState({
+      name: "",
+      phone: "",
       email: "",
       password: "",
     });
-  
+
     const handleChange = (e) => {
       setFormData({...formData, [e.target.name]: e.target.value});
     }
 
-  
     const handleSubmit = (e) => {
       e.preventDefault();
       loginMutation.mutate(formData);
     }
 
     const loginMutation = useMutation({
-      mutationFn: (reqData) => login(reqData),
-      onSuccess: (res) => {
-          const { data } = res;
-          console.log(data);
-          const { _id, name, email, phone, role } = data.data;
-          dispatch(setUser({ _id, name, email, phone, role }));
-          navigate("/");
+      mutationFn: (reqData) => isSetup ? register(reqData) : login({ email: reqData.email, password: reqData.password }),
+      onSuccess: async (res) => {
+          const settings = await queryClient.fetchQuery({ queryKey: ["settings"], queryFn: getSettings });
+          setCurrencySymbol(settings.data.currencySymbol);
+          dispatch(setUser(res.data));
+          navigate(isSetup ? "/settings" : "/");
       },
       onError: (error) => {
-        const { response } = error;
-        enqueueSnackbar(response.data.message, { variant: "error" });
+        enqueueSnackbar(apiError(error, "Couldn't reach the server."), { variant: "error" });
       }
     })
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {isSetup && (
+          <>
+            <div>
+              <label className="label">Your name</label>
+              <input type="text" name="name" value={formData.name} onChange={handleChange} className="input" required autoFocus />
+            </div>
+            <div>
+              <label className="label">Phone</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="07X XXX XXXX" className="input" required />
+            </div>
+          </>
+        )}
         <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
-            Employee Email
-          </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter employee email"
-              className="bg-transparent flex-1 text-white focus:outline-none"
-              required
-            />
-          </div>
+          <label className="label">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="you@restaurant.lk"
+            className="input"
+            autoComplete="username"
+            required
+            autoFocus={!isSetup}
+          />
         </div>
         <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
-            Password
-          </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter password"
-              className="bg-transparent flex-1 text-white focus:outline-none"
-              required
-            />
-          </div>
+          <label className="label">Password</label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder={isSetup ? "At least 8 characters" : "Enter password"}
+            minLength={isSetup ? 8 : undefined}
+            className="input"
+            autoComplete={isSetup ? "new-password" : "current-password"}
+            required
+          />
         </div>
 
         <button
           type="submit"
-          className="w-full rounded-lg mt-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold"
+          disabled={loginMutation.isPending}
+          className="btn-primary w-full !py-3 !mt-6"
         >
-          Sign in
+          {isSetup ? "Create admin account" : "Sign in"}
         </button>
       </form>
-    </div>
   );
 };
 

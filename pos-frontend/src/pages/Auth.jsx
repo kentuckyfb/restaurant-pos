@@ -1,61 +1,40 @@
-import React, { useEffect, useState } from "react";
-import restaurant from "../assets/images/restaurant-img.jpg"
-import logo from "../assets/images/logo.png"
-import Register from "../components/auth/Register";
+import React, { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import Logo from "../components/shared/Logo";
 import Login from "../components/auth/Login";
+import { getSetupStatus } from "../https";
 
+// Sign-in (or first-time setup), in the same dark-and-white style as the app's sidebar
 const Auth = () => {
 
   useEffect(() => {
-    document.title = "POS | Auth"
+    document.title = "Sign in · Restro"
   }, [])
 
-  const [isRegister, setIsRegister] = useState(false);
+  const { data: setup } = useQuery({ queryKey: ["setup"], queryFn: getSetupStatus, select: (r) => r.data });
+  const isSetup = Boolean(setup?.needsSetup);
 
   return (
-    <div className="flex min-h-screen w-full">
-      {/* Left Section */}
-      <div className="w-1/2 relative flex items-center justify-center bg-cover">
-        {/* BG Image */}
-        <img className="w-full h-full object-cover" src={restaurant} alt="Restaurant Image" />
-
-        {/* Black Overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-80"></div>
-
-        {/* Quote at bottom */}
-        <blockquote className="absolute bottom-10 px-8 mb-10 text-2xl italic text-white">
-          "Serve customers the best food with prompt and friendly service in a
-          welcoming atmosphere, and they’ll keep coming back."
-          <br />
-          <span className="block mt-4 text-yellow-400">- Founder of Restro</span>
-        </blockquote>
-      </div>
-
-      {/* Right Section */}
-      <div className="w-1/2 min-h-screen bg-[#1a1a1a] p-10">
-        <div className="flex flex-col items-center gap-2">
-          <img src={logo} alt="Restro Logo" className="h-14 w-14 border-2 rounded-full p-1" />
-          <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide">Restro</h1>
+    <div className="min-h-screen w-full bg-zinc-950 flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-[380px]">
+        <div className="flex justify-center text-white mb-8">
+          <Logo />
         </div>
 
-        <h2 className="text-4xl text-center mt-10 font-semibold text-yellow-400 mb-10">
-          {isRegister ? "Employee Registration" : "Employee Login"}
-        </h2>
-
-        {/* Components */}  
-        {isRegister ? <Register setIsRegister={setIsRegister} /> : <Login />}
-
-
-        <div className="flex justify-center mt-6">
-          <p className="text-sm text-[#ababab]">
-            {isRegister ? "Already have an account?" : "Don't have an account?"}
-            <a onClick={() => setIsRegister(!isRegister)} className="text-yellow-400 font-semibold hover:underline" href="#">
-              {isRegister ? "Sign in" : "Sign up"}
-            </a>
+        <div className="bg-white rounded-2xl shadow-2xl shadow-black/40 p-7">
+          <h1 className="text-xl font-semibold tracking-tight">
+            {isSetup ? "Set up your POS" : "Sign in"}
+          </h1>
+          <p className="text-sm text-zinc-600 mt-1 mb-6">
+            {isSetup ? "Create the owner's admin account." : "Welcome back."}
           </p>
+
+          <Login isSetup={isSetup} key={isSetup ? "setup" : "login"} />
         </div>
 
-
+        {!isSetup && (
+          <p className="text-xs text-zinc-500 text-center mt-6">New staff? Ask a manager to add you.</p>
+        )}
       </div>
     </div>
   );
