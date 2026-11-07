@@ -4,7 +4,7 @@ import Logo from "../components/shared/Logo";
 import Login from "../components/auth/Login";
 import { getSetupStatus } from "../https";
 
-// Sign-in (or first-time setup), in the same dark-and-white style as the app's sidebar
+// Sign-in or first-time admin setup with clean, modern layout
 const Auth = () => {
   const [forceSetup, setForceSetup] = useState(false);
 
@@ -12,7 +12,7 @@ const Auth = () => {
     document.title = "Sign in · Restro";
   }, []);
 
-  const { data: setup, isError, error } = useQuery({
+  const { data: setup, isError } = useQuery({
     queryKey: ["setup"],
     queryFn: getSetupStatus,
     select: (r) => r.data,
@@ -22,42 +22,50 @@ const Auth = () => {
   const isSetup = Boolean(setup?.needsSetup || forceSetup);
 
   return (
-    <div className="min-h-screen w-full bg-zinc-950 flex flex-col items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[380px]">
+    <div className="min-h-screen w-full bg-zinc-950 flex flex-col items-center justify-center px-4 py-12 select-none">
+      <div className="w-full max-w-[420px]">
+        {/* Brand Logo */}
         <div className="flex justify-center text-white mb-8">
           <Logo />
         </div>
 
+        {/* Database Connection Notice if offline */}
         {isError && (
-          <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs text-center">
-            ⚠️ Backend database is currently unreachable. Make sure MongoDB Atlas Network Access has whitelisted your IP (0.0.0.0/0).
+          <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs leading-relaxed text-center">
+            ⚠️ Backend cannot reach MongoDB Atlas. Please ensure <code className="bg-amber-500/20 px-1 py-0.5 rounded text-amber-200">0.0.0.0/0</code> is whitelisted in Atlas Network Access.
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-2xl shadow-black/40 p-7">
-          <div className="flex items-center justify-between mb-1">
-            <h1 className="text-xl font-semibold tracking-tight">
+        {/* Main Card */}
+        <div className="bg-white rounded-2xl shadow-2xl shadow-black/60 p-7 sm:p-9 border border-zinc-100/10">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
               {isSetup ? "Set up your POS" : "Sign in"}
             </h1>
+            <p className="text-sm text-zinc-500 mt-1">
+              {isSetup ? "Create the owner's master admin account." : "Enter your credentials to access the POS till."}
+            </p>
+          </div>
+
+          <Login isSetup={isSetup} key={isSetup ? "setup" : "login"} />
+
+          {/* Clean Footer Switch inside card */}
+          <div className="mt-6 pt-5 border-t border-zinc-100 flex items-center justify-center text-xs text-zinc-500">
+            <span>{isSetup ? "Already configured?" : "First time setup?"}</span>
             <button
               type="button"
               onClick={() => setForceSetup(!isSetup)}
-              className="text-xs text-zinc-500 hover:text-zinc-900 underline underline-offset-4"
+              className="ml-1.5 font-semibold text-orange-600 hover:text-orange-500 hover:underline transition-colors cursor-pointer"
             >
-              {isSetup ? "Switch to Sign in" : "Create first Admin"}
+              {isSetup ? "Sign in instead" : "Create first Admin"}
             </button>
           </div>
-
-          <p className="text-sm text-zinc-600 mb-6">
-            {isSetup ? "Create the owner's master admin account." : "Enter your staff email and password."}
-          </p>
-
-          <Login isSetup={isSetup} key={isSetup ? "setup" : "login"} />
         </div>
 
+        {/* Subtle Bottom Note */}
         {!isSetup && (
           <p className="text-xs text-zinc-500 text-center mt-6">
-            New staff? Ask a manager to add you from the Staff page.
+            New staff member? Ask an admin to invite you from the Staff page.
           </p>
         )}
       </div>
