@@ -1,17 +1,17 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const config = require('../config/config');
 
 const clearDatabase = async () => {
   try {
     console.log('Connecting to database...');
     await mongoose.connect(config.databaseURI, { serverSelectionTimeoutMS: 10000 });
-    console.log('Connected to:', mongoose.connection.name);
+    console.log('Connected to database:', mongoose.connection.name);
 
     const collections = await mongoose.connection.db.collections();
-    for (const collection of collections) {
-      const count = await collection.countDocuments();
-      await collection.deleteMany({});
-      console.log(Cleared  (removed  documents));
+    for (const col of collections) {
+      const count = await col.countDocuments();
+      await col.deleteMany({});
+      console.log('Cleared ' + col.collectionName + ' (removed ' + count + ' documents)');
     }
 
     console.log('Database is now a completely clean slate.');
