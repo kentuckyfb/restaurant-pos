@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "clean-slate": "node scripts/clean-slate.js"
   },
   "keywords": [],
   "author": "",
